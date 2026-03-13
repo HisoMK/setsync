@@ -5,12 +5,16 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: "#0D0D0D",
-        surface: "#1A1A2E",
+        background: "#000000",
+        surface: "#0D0D0D",
+        surfaceBorder: "#1A1A1A",
         accent: "#E8453C",
         primary: "#F0F0F0",
-        muted: "#888888",
+        muted: "#6B6B6B",
         success: "#27AE60",
+      },
+      fontFamily: {
+        sans: ["System"],
       },
     },
   },

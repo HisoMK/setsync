@@ -36,25 +36,26 @@ export function RestTimer() {
           key={setCount}
           isPlaying={true}
           duration={restDuration}
-          size={280}
-          strokeWidth={14}
-          trailStrokeWidth={14}
+          size={260}
+          strokeWidth={20}
+          trailStrokeWidth={20}
           colors={colours.accent}
           trailColor={colours.surface}
           onComplete={handleComplete}
         >
           {({ remainingTime }) => (
-            <Text className="text-primary text-5xl font-bold">
+            <Text className="text-primary text-5xl font-black">
               {remainingTime}
             </Text>
           )}
         </CountdownCircleTimer>
       ) : (
         <View
-          className="w-[280px] h-[280px] rounded-full bg-surface items-center justify-center"
-          style={{ borderRadius: 140 }}
+          className="w-[260px] h-[260px] rounded-none bg-background border-4 border-accent items-center justify-center"
         >
-          <Text className="text-muted text-2xl">READY</Text>
+          <Text className="text-accent text-xl font-black uppercase tracking-[0.25em]">
+            Ready
+          </Text>
         </View>
       )}
     </View>

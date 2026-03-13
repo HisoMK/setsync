@@ -54,43 +54,43 @@ export default function MainScreen() {
   };
 
   return (
-    <View className="flex-1 bg-background px-6 pt-12 pb-8">
-      <View className="items-center mb-8">
+    <View className="flex-1 bg-background px-5 pt-10 pb-6">
+      <View className="items-center mb-6">
         <SetCounter />
       </View>
       <View className="flex-1 justify-center items-center">
         <StatusLabel />
         <RestTimer />
-        <View className="mt-6 flex-row items-center gap-4">
+        <View className="mt-6 flex-row items-center gap-3">
           <Pressable
             onPress={handleRestDecrease}
             disabled={restDuration <= MIN_REST_SECONDS}
-            className="w-12 h-12 rounded-full bg-surface items-center justify-center active:opacity-80 disabled:opacity-50"
+            className="w-12 h-12 rounded-none bg-surface border-2 border-primary items-center justify-center active:opacity-70 disabled:opacity-40"
             accessibilityLabel="Decrease rest duration"
           >
-            <Text className="text-primary text-2xl font-bold">−</Text>
+            <Text className="text-primary text-xl font-black">−</Text>
           </Pressable>
-          <Text className="text-primary text-lg min-w-[60px] text-center">
+          <Text className="text-muted text-sm font-bold uppercase tracking-wider min-w-[72px] text-center">
             Rest {restDuration}s
           </Text>
           <Pressable
             onPress={handleRestIncrease}
             disabled={restDuration >= MAX_REST_SECONDS}
-            className="w-12 h-12 rounded-full bg-surface items-center justify-center active:opacity-80 disabled:opacity-50"
+            className="w-12 h-12 rounded-none bg-surface border-2 border-primary items-center justify-center active:opacity-70 disabled:opacity-40"
             accessibilityLabel="Increase rest duration"
           >
-            <Text className="text-primary text-2xl font-bold">+</Text>
+            <Text className="text-primary text-xl font-black">+</Text>
           </Pressable>
         </View>
       </View>
-      <View className="pt-8">
+      <View className="pt-6">
         <CompleteButton />
       </View>
       <Pressable
         onPress={handleResetPress}
-        className="mt-4 py-3 rounded-xl border border-red-500/60 active:opacity-80"
+        className="mt-4 py-3 rounded-none border-2 border-accent active:opacity-80"
       >
-        <Text className="text-red-400 text-center text-sm font-medium">
+        <Text className="text-accent text-center text-xs font-black uppercase tracking-wider">
           Reset session
         </Text>
       </Pressable>

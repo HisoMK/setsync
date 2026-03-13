@@ -19,7 +19,13 @@ export function StatusLabel() {
       entering={FadeIn.duration(200)}
       className="mb-3"
     >
-      <Text className="text-muted text-lg font-semibold uppercase tracking-wider">
+      <Text
+        className={
+          isResting
+            ? "text-accent text-sm font-black uppercase tracking-[0.3em]"
+            : "text-muted text-sm font-black uppercase tracking-[0.25em]"
+        }
+      >
         {label}
       </Text>
     </Animated.View>

@@ -13,9 +13,9 @@ export function CompleteButton() {
   return (
     <Pressable
       onPress={handlePress}
-      className="w-full bg-accent py-5 rounded-xl active:opacity-90"
+      className="w-full bg-accent border-2 border-primary py-5 rounded-none active:opacity-90"
     >
-      <Text className="text-primary text-center text-xl font-bold">
+      <Text className="text-primary text-center text-xl font-black uppercase tracking-wider">
         Complete Set
       </Text>
     </Pressable>

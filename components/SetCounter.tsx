@@ -6,24 +6,29 @@ export function SetCounter() {
   const adjustSetCount = useWorkoutStore((state) => state.adjustSetCount);
 
   return (
-    <View className="flex-row items-center justify-center gap-6">
-      <Pressable
-        onPress={() => adjustSetCount(-1)}
-        className="w-14 h-14 rounded-full bg-surface items-center justify-center active:opacity-80"
-        accessibilityLabel="Decrease set count"
-      >
-        <Text className="text-primary text-3xl font-bold">−</Text>
-      </Pressable>
-      <Text className="text-primary text-6xl font-bold min-w-[80px] text-center">
-        {setCount}
+    <View className="items-center">
+      <Text className="text-muted text-sm font-bold uppercase tracking-[0.2em] mb-1">
+        Set
       </Text>
-      <Pressable
-        onPress={() => adjustSetCount(1)}
-        className="w-14 h-14 rounded-full bg-surface items-center justify-center active:opacity-80"
-        accessibilityLabel="Increase set count"
-      >
-        <Text className="text-primary text-3xl font-bold">+</Text>
-      </Pressable>
+      <View className="flex-row items-baseline justify-center gap-4">
+        <Pressable
+          onPress={() => adjustSetCount(-1)}
+          className="w-14 h-14 rounded-none bg-surface border-2 border-primary items-center justify-center active:opacity-70"
+          accessibilityLabel="Decrease set count"
+        >
+          <Text className="text-primary text-2xl font-black">−</Text>
+        </Pressable>
+        <Text className="text-primary text-[7rem] font-black min-w-[120px] text-center leading-none">
+          {setCount}
+        </Text>
+        <Pressable
+          onPress={() => adjustSetCount(1)}
+          className="w-14 h-14 rounded-none bg-surface border-2 border-primary items-center justify-center active:opacity-70"
+          accessibilityLabel="Increase set count"
+        >
+          <Text className="text-primary text-2xl font-black">+</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
