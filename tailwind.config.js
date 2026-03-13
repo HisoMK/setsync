@@ -5,13 +5,19 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: "#000000",
-        surface: "#0D0D0D",
-        surfaceBorder: "#1A1A1A",
-        accent: "#E8453C",
-        primary: "#F0F0F0",
-        muted: "#6B6B6B",
-        success: "#27AE60",
+        background: "#0D1321",
+        surface: "#1A2332",
+        surfaceBorder: "#2D3A4D",
+        accent: "#C45C52",
+        accentEnd: "#A84A42",
+        primary: "#E8EAED",
+        muted: "#8B95A5",
+        success: "#2D9D78",
+      },
+      borderRadius: {
+        card: "1rem",
+        button: "0.75rem",
+        control: "0.625rem",
       },
       fontFamily: {
         sans: ["System"],

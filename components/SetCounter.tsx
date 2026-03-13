@@ -13,7 +13,7 @@ export function SetCounter() {
       <View className="flex-row items-baseline justify-center gap-4">
         <Pressable
           onPress={() => adjustSetCount(-1)}
-          className="w-14 h-14 rounded-none bg-surface border-2 border-primary items-center justify-center active:opacity-70"
+          className="w-14 h-14 rounded-control bg-surface border border-surfaceBorder items-center justify-center active:opacity-70"
           accessibilityLabel="Decrease set count"
         >
           <Text className="text-primary text-2xl font-black">−</Text>
@@ -23,7 +23,7 @@ export function SetCounter() {
         </Text>
         <Pressable
           onPress={() => adjustSetCount(1)}
-          className="w-14 h-14 rounded-none bg-surface border-2 border-primary items-center justify-center active:opacity-70"
+          className="w-14 h-14 rounded-control bg-surface border border-surfaceBorder items-center justify-center active:opacity-70"
           accessibilityLabel="Increase set count"
         >
           <Text className="text-primary text-2xl font-black">+</Text>

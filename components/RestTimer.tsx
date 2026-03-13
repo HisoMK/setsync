@@ -3,7 +3,7 @@ import * as Haptics from "expo-haptics";
 import { View, Text } from "react-native";
 import { CountdownCircleTimer } from "react-native-countdown-circle-timer";
 import { useWorkoutStore } from "../store/workoutStore";
-import { colours } from "../constants/colours";
+import { colours, timerRingColors } from "../constants/colours";
 
 const restEndSound = require("../assets/sounds/rest-end.wav");
 
@@ -39,7 +39,7 @@ export function RestTimer() {
           size={260}
           strokeWidth={20}
           trailStrokeWidth={20}
-          colors={colours.accent}
+          colors={[...timerRingColors]}
           trailColor={colours.surface}
           onComplete={handleComplete}
         >
@@ -51,7 +51,7 @@ export function RestTimer() {
         </CountdownCircleTimer>
       ) : (
         <View
-          className="w-[260px] h-[260px] rounded-none bg-background border-4 border-accent items-center justify-center"
+          className="w-[260px] h-[260px] rounded-card bg-surface border border-surfaceBorder items-center justify-center"
         >
           <Text className="text-accent text-xl font-black uppercase tracking-[0.25em]">
             Ready

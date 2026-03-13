@@ -7,8 +7,9 @@ import {
   activateKeepAwakeAsync,
   deactivateKeepAwake,
 } from "expo-keep-awake";
+import { LinearGradient } from "expo-linear-gradient";
 import { useEffect } from "react";
-import { Alert, Pressable, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { CompleteButton } from "../components/CompleteButton";
 import { RestTimer } from "../components/RestTimer";
 import { SetCounter } from "../components/SetCounter";
@@ -53,8 +54,27 @@ export default function MainScreen() {
     );
   };
 
+  // Aurora-style background: deep navy, dark purple, charcoal — subtle mesh for depth
+  const bgColors = ["#0A0E1A", "#0D1321", "#16213e", "#1a1a2e", "#1e1e24"] as const;
+  const bgLocations = [0, 0.25, 0.5, 0.75, 1] as const;
+
   return (
-    <View className="flex-1 bg-background px-5 pt-10 pb-6">
+    <View style={styles.container}>
+      <LinearGradient
+        colors={bgColors}
+        locations={bgLocations}
+        start={{ x: 0.2, y: 0 }}
+        end={{ x: 0.9, y: 1 }}
+        style={StyleSheet.absoluteFillObject}
+      />
+      <LinearGradient
+        colors={["#1a1a2e", "transparent", "#16213e"]}
+        locations={[0, 0.5, 1]}
+        start={{ x: 0, y: 0.4 }}
+        end={{ x: 1, y: 0.6 }}
+        style={[StyleSheet.absoluteFillObject, styles.auroraOverlay]}
+      />
+      <View className="flex-1 px-5 pt-10 pb-6">
       <View className="items-center mb-6">
         <SetCounter />
       </View>
@@ -65,7 +85,7 @@ export default function MainScreen() {
           <Pressable
             onPress={handleRestDecrease}
             disabled={restDuration <= MIN_REST_SECONDS}
-            className="w-12 h-12 rounded-none bg-surface border-2 border-primary items-center justify-center active:opacity-70 disabled:opacity-40"
+            className="w-12 h-12 rounded-control bg-surface border border-surfaceBorder items-center justify-center active:opacity-70 disabled:opacity-40"
             accessibilityLabel="Decrease rest duration"
           >
             <Text className="text-primary text-xl font-black">−</Text>
@@ -76,7 +96,7 @@ export default function MainScreen() {
           <Pressable
             onPress={handleRestIncrease}
             disabled={restDuration >= MAX_REST_SECONDS}
-            className="w-12 h-12 rounded-none bg-surface border-2 border-primary items-center justify-center active:opacity-70 disabled:opacity-40"
+            className="w-12 h-12 rounded-control bg-surface border border-surfaceBorder items-center justify-center active:opacity-70 disabled:opacity-40"
             accessibilityLabel="Increase rest duration"
           >
             <Text className="text-primary text-xl font-black">+</Text>
@@ -88,12 +108,18 @@ export default function MainScreen() {
       </View>
       <Pressable
         onPress={handleResetPress}
-        className="mt-4 py-3 rounded-none border-2 border-accent active:opacity-80"
+        className="mt-4 py-3 rounded-control border border-surfaceBorder active:opacity-80"
       >
-        <Text className="text-accent text-center text-xs font-black uppercase tracking-wider">
+        <Text className="text-muted text-center text-xs font-bold uppercase tracking-wider">
           Reset session
         </Text>
       </Pressable>
+      </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  auroraOverlay: { opacity: 0.45 },
+});
