@@ -9,6 +9,7 @@ export function CompleteButton() {
   const startNewExercise = useWorkoutStore((state) => state.startNewExercise);
   const setCount = useWorkoutStore((state) => state.setCount);
   const targetSetCount = useWorkoutStore((state) => state.targetSetCount);
+  const isResting = useWorkoutStore((state) => state.isResting);
 
   const isTargetReached = setCount > 0 && setCount >= targetSetCount;
 
@@ -24,7 +25,9 @@ export function CompleteButton() {
   return (
     <Pressable
       onPress={handlePress}
+      disabled={isResting}
       className="w-full rounded-button overflow-hidden active:opacity-90 shadow-lg shadow-black/20"
+      style={{ opacity: isResting ? 0.4 : 1 }}
     >
       <LinearGradient
         colors={[colours.accent, colours["accent-dim"]]}

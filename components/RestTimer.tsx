@@ -76,16 +76,16 @@ export function RestTimer() {
     pulseOpacity.value = 0.65;
     // Heartbeat: quick first pulse, then a larger ripple that fades out
     pulseScale.value = withSequence(
-      withTiming(1.22, { duration: 250 }),
-      withTiming(1.12, { duration: 120 }),
-      withTiming(1.5, { duration: 380 })
+      withTiming(1.22, { duration: 500 }),
+      withTiming(1.12, { duration: 240 }),
+      withTiming(1.5, { duration: 760 })
     );
     pulseOpacity.value = withSequence(
-      withTiming(0.45, { duration: 250 }),
-      withTiming(0.5, { duration: 120 }),
-      withTiming(0, { duration: 380 })
+      withTiming(0.45, { duration: 500 }),
+      withTiming(0.5, { duration: 240 }),
+      withTiming(0, { duration: 760 })
     );
-    setTimeout(() => setShowPulse(false), 800);
+    setTimeout(() => setShowPulse(false), 1600);
   }, [pulseScale, pulseOpacity]);
 
   const handleComplete = async () => {

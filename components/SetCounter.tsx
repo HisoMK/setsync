@@ -13,7 +13,6 @@ import Animated, {
   useAnimatedStyle,
   withSequence,
   withTiming,
-  withSpring,
 } from "react-native-reanimated";
 import { useWorkoutStore } from "../store/workoutStore";
 
@@ -35,7 +34,9 @@ export function SetCounter() {
     if (completeSetTrigger > 0) {
       scale.value = withSequence(
         withTiming(1.28, { duration: 110 }),
-        withSpring(1, { damping: 6, stiffness: 220 })
+        withTiming(0.93, { duration: 90 }),
+        withTiming(1.1, { duration: 80 }),
+        withTiming(1, { duration: 120 })
       );
     }
   }, [completeSetTrigger]);
@@ -68,7 +69,7 @@ export function SetCounter() {
             style={styles.leftColumn}
             accessibilityLabel="Edit current set count"
           >
-            <Ionicons name="pencil-outline" size={20} color="#555555" />
+            <Ionicons name="pencil" size={22} color="#555555" />
           </Pressable>
 
           {/* Center: big digit */}
