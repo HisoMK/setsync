@@ -2,13 +2,24 @@ import { create } from "zustand";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { DEFAULT_REST_SECONDS } from "../constants/config";
 
-const REST_DURATION_STORAGE_KEY = "@setsync/restDuration";
+const STORAGE_KEYS = {
+  restDuration: "@setsync/restDuration",
+  targetSetCount: "@setsync/targetSetCount",
+  hasCompletedOnboarding: "@setsync/hasCompletedOnboarding",
+  soundEnabled: "@setsync/soundEnabled",
+  setCount: "@setsync/setCount",
+} as const;
 
 interface WorkoutState {
   setCount: number;
   isResting: boolean;
   restDuration: number;
   restTimeRemaining: number;
+  targetSetCount: number;
+  hasCompletedOnboarding: boolean;
+  soundEnabled: boolean;
+  isPaused: boolean;
+  completeSetTrigger: number;
 }
 
 interface WorkoutActions {
@@ -17,46 +28,62 @@ interface WorkoutActions {
   setRestDuration: (seconds: number) => void;
   adjustSetCount: (delta: number) => void;
   endRest: () => void;
+  setTargetSetCount: (n: number) => void;
+  completeOnboarding: (sets: number, restDuration: number) => void;
+  resetOnboarding: () => void;
+  pauseRest: () => void;
+  resumeRest: () => void;
+  stopRest: () => void;
+  startNewExercise: () => void;
+  setSoundEnabled: (enabled: boolean) => void;
 }
 
 type WorkoutStore = WorkoutState & WorkoutActions;
 
-const persistRestDuration = async (seconds: number) => {
+const persist = async (key: string, value: string) => {
   try {
-    await AsyncStorage.setItem(REST_DURATION_STORAGE_KEY, String(seconds));
+    await AsyncStorage.setItem(key, value);
   } catch {
     // Ignore persistence errors
   }
 };
 
-export const useWorkoutStore = create<WorkoutStore>((set) => ({
-  // State (Section 7)
+export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
   setCount: 0,
   isResting: false,
   restDuration: DEFAULT_REST_SECONDS,
   restTimeRemaining: DEFAULT_REST_SECONDS,
+  targetSetCount: 4,
+  hasCompletedOnboarding: false,
+  soundEnabled: true,
+  isPaused: false,
+  completeSetTrigger: 0,
 
-  // Actions (Section 7)
-  completeSet: () =>
+  completeSet: () => {
+    const next = get().setCount + 1;
+    persist(STORAGE_KEYS.setCount, String(next));
     set((state) => ({
-      setCount: state.setCount + 1,
+      setCount: next,
       isResting: true,
+      isPaused: false,
       restTimeRemaining: state.restDuration,
-    })),
+      completeSetTrigger: state.completeSetTrigger + 1,
+    }));
+  },
 
-  resetSession: () =>
+  resetSession: () => {
+    persist(STORAGE_KEYS.setCount, "0");
     set((state) => ({
       setCount: 0,
       isResting: false,
+      isPaused: false,
       restTimeRemaining: state.restDuration,
-    })),
+    }));
+  },
 
   setRestDuration: (seconds) => {
-    persistRestDuration(seconds);
-    set({
-      restDuration: seconds,
-      restTimeRemaining: seconds,
-    });
+    persist(STORAGE_KEYS.restDuration, String(seconds));
+    set({ restDuration: seconds, restTimeRemaining: seconds });
   },
 
   adjustSetCount: (delta) =>
@@ -64,27 +91,105 @@ export const useWorkoutStore = create<WorkoutStore>((set) => ({
       setCount: Math.max(0, state.setCount + delta),
     })),
 
-  endRest: () => set({ isResting: false }),
+  endRest: () => set({ isResting: false, isPaused: false }),
+
+  setTargetSetCount: (n) => {
+    persist(STORAGE_KEYS.targetSetCount, String(n));
+    set({ targetSetCount: n });
+  },
+
+  completeOnboarding: (sets, restDuration) => {
+    persist(STORAGE_KEYS.targetSetCount, String(sets));
+    persist(STORAGE_KEYS.restDuration, String(restDuration));
+    persist(STORAGE_KEYS.hasCompletedOnboarding, "true");
+    set({
+      targetSetCount: sets,
+      restDuration,
+      restTimeRemaining: restDuration,
+      hasCompletedOnboarding: true,
+    });
+  },
+
+  resetOnboarding: () => {
+    AsyncStorage.removeItem(STORAGE_KEYS.hasCompletedOnboarding).catch(() => {});
+    set({ hasCompletedOnboarding: false });
+  },
+
+  pauseRest: () => set({ isPaused: true }),
+
+  resumeRest: () => set({ isPaused: false }),
+
+  stopRest: () =>
+    set((state) => ({
+      isResting: false,
+      isPaused: false,
+      restTimeRemaining: state.restDuration,
+    })),
+
+  startNewExercise: () => {
+    persist(STORAGE_KEYS.setCount, "0");
+    set((state) => ({
+      setCount: 0,
+      isResting: false,
+      isPaused: false,
+      restTimeRemaining: state.restDuration,
+    }));
+  },
+
+  setSoundEnabled: (enabled) => {
+    persist(STORAGE_KEYS.soundEnabled, String(enabled));
+    set({ soundEnabled: enabled });
+  },
 }));
 
 /**
- * Load restDuration from AsyncStorage on app startup.
+ * Hydrate all persisted store values from AsyncStorage on app startup.
  * Call once from root layout or main screen (e.g. in useEffect).
- * Falls back to 90 seconds if missing or invalid.
  */
-export async function hydrateRestDuration(): Promise<void> {
+export async function hydrateStore(): Promise<void> {
   try {
-    const stored = await AsyncStorage.getItem(REST_DURATION_STORAGE_KEY);
-    if (stored != null) {
-      const seconds = parseInt(stored, 10);
-      if (Number.isInteger(seconds) && seconds > 0) {
-        useWorkoutStore.getState().setRestDuration(seconds);
-        return;
-      }
+    const [restDuration, targetSetCount, hasCompletedOnboarding, soundEnabled, setCount] =
+      await AsyncStorage.multiGet([
+        STORAGE_KEYS.restDuration,
+        STORAGE_KEYS.targetSetCount,
+        STORAGE_KEYS.hasCompletedOnboarding,
+        STORAGE_KEYS.soundEnabled,
+        STORAGE_KEYS.setCount,
+      ]);
+
+    const updates: Partial<WorkoutState> = {};
+
+    const restSecs = parseInt(restDuration[1] ?? "", 10);
+    if (Number.isInteger(restSecs) && restSecs > 0) {
+      updates.restDuration = restSecs;
+      updates.restTimeRemaining = restSecs;
     }
+
+    const targetSets = parseInt(targetSetCount[1] ?? "", 10);
+    if (Number.isInteger(targetSets) && targetSets > 0) {
+      updates.targetSetCount = targetSets;
+    }
+
+    if (hasCompletedOnboarding[1] === "true") {
+      updates.hasCompletedOnboarding = true;
+    }
+
+    if (soundEnabled[1] === "false") {
+      updates.soundEnabled = false;
+    }
+
+    const storedSetCount = parseInt(setCount[1] ?? "", 10);
+    if (Number.isInteger(storedSetCount) && storedSetCount >= 0) {
+      updates.setCount = storedSetCount;
+    }
+
+    useWorkoutStore.setState(updates);
   } catch {
-    // Fall back to default (already in store)
+    // Fall back to defaults already in store
   }
-  // Ensure default is applied; setRestDuration also persists it
-  useWorkoutStore.getState().setRestDuration(DEFAULT_REST_SECONDS);
+}
+
+/** @deprecated Use hydrateStore() instead */
+export async function hydrateRestDuration(): Promise<void> {
+  return hydrateStore();
 }
