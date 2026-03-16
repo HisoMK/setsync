@@ -46,7 +46,7 @@ function PickerControl({
   incrementDisabled: boolean;
 }) {
   return (
-    <View className="flex-row items-center gap-6">
+    <View style={styles.pickerRow}>
       <Pressable
         onPress={onDecrement}
         disabled={decrementDisabled}
@@ -57,7 +57,13 @@ function PickerControl({
         <Text style={styles.pickerBtn}>−</Text>
       </Pressable>
 
-      <Text style={styles.pickerValue}>{displayValue}</Text>
+      <Text
+        style={styles.pickerValue}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+      >
+        {displayValue}
+      </Text>
 
       <Pressable
         onPress={onIncrement}
@@ -389,12 +395,21 @@ const styles = StyleSheet.create({
   pickerBtnAccent: {
     color: "#A3E635",
   },
+  pickerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 24,
+    height: 64,
+  },
   pickerValue: {
     fontSize: 52,
     fontWeight: "900",
     color: "#F5F5F5",
     width: 160,
+    height: 64,
     textAlign: "center",
+    textAlignVertical: "center",
+    includeFontPadding: false,
   },
   summaryHeading: {
     gap: 8,

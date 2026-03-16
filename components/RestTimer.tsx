@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     width: 260,
     height: 260,
     borderRadius: 130,
-    borderWidth: 20,
+    borderWidth: 10,
     borderColor: "#A3E635",
     pointerEvents: "none",
   },

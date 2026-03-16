@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Modal,
   Pressable,
@@ -25,18 +25,24 @@ export function SetCounter() {
   const [editing, setEditing] = useState(false);
   const [inputValue, setInputValue] = useState("");
 
-  const scale = useSharedValue(1);
-  const digitAnimStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+  const digitWidthRef = useRef(0);
+  const sweepWidth = useSharedValue(0);
+  const sweepOpacity = useSharedValue(0);
+
+  const sweepClipStyle = useAnimatedStyle(() => ({
+    width: sweepWidth.value,
+    opacity: sweepOpacity.value,
   }));
 
   useEffect(() => {
     if (completeSetTrigger > 0) {
-      scale.value = withSequence(
-        withTiming(1.28, { duration: 110 }),
-        withTiming(0.93, { duration: 90 }),
-        withTiming(1.1, { duration: 80 }),
-        withTiming(1, { duration: 120 })
+      const target = digitWidthRef.current;
+      sweepWidth.value = 0;
+      sweepOpacity.value = 1;
+      sweepWidth.value = withTiming(target, { duration: 400 });
+      sweepOpacity.value = withSequence(
+        withTiming(1, { duration: 500 }),
+        withTiming(0, { duration: 350 })
       );
     }
   }, [completeSetTrigger]);
@@ -69,15 +75,23 @@ export function SetCounter() {
             style={styles.leftColumn}
             accessibilityLabel="Edit current set count"
           >
-            <Ionicons name="pencil" size={22} color="#555555" />
+            <Ionicons name="options-outline" size={22} color="#555555" />
           </Pressable>
 
-          {/* Center: big digit */}
-          <Animated.Text
-            style={[styles.digit, digitAnimStyle]}
-          >
-            {setCount}
-          </Animated.Text>
+          {/* Center: big digit with left-to-right green sweep on complete */}
+          <View style={styles.digitWrapper}>
+            <Text
+              style={styles.digit}
+              onLayout={(e) => {
+                digitWidthRef.current = e.nativeEvent.layout.width;
+              }}
+            >
+              {setCount}
+            </Text>
+            <Animated.View style={[styles.sweepClip, sweepClipStyle]}>
+              <Text style={[styles.digit, styles.digitAccent]}>{setCount}</Text>
+            </Animated.View>
+          </View>
 
           {/* Right column: / Y — same fixed width as left column */}
           <View style={styles.rightColumn}>
@@ -160,10 +174,24 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     gap: 2,
   },
+  digitWrapper: {
+    position: "relative",
+    alignSelf: "center",
+  },
   digit: {
     fontSize: 112,
     fontWeight: "900",
     color: "#F5F5F5",
     lineHeight: 112,
+  },
+  digitAccent: {
+    color: "#A3E635",
+  },
+  sweepClip: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    bottom: 0,
+    overflow: "hidden",
   },
 });
