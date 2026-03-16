@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CompleteButton } from "../components/CompleteButton";
 import { RestTimer } from "../components/RestTimer";
 import { SetCounter } from "../components/SetCounter";
@@ -11,6 +12,7 @@ import { StatusLabel } from "../components/StatusLabel";
 import { useWorkoutStore } from "../store/workoutStore";
 
 export default function MainScreen() {
+  const insets = useSafeAreaInsets();
   const isResting = useWorkoutStore((state) => state.isResting);
 
   useEffect(() => {
@@ -36,7 +38,7 @@ export default function MainScreen() {
         end={{ x: 0.5, y: 1 }}
         style={StyleSheet.absoluteFillObject}
       />
-      <View className="flex-1 px-6 pt-12 pb-8">
+      <View className="flex-1 px-6 pt-12" style={{ paddingBottom: insets.bottom + 16 }}>
         <View className="flex-row justify-end mb-4">
           <Pressable
             onPress={() => router.push("/settings")}

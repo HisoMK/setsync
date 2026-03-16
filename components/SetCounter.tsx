@@ -39,10 +39,10 @@ export function SetCounter() {
       const target = digitWidthRef.current;
       sweepWidth.value = 0;
       sweepOpacity.value = 1;
-      sweepWidth.value = withTiming(target, { duration: 400 });
+      sweepWidth.value = withTiming(target, { duration: 700 });
       sweepOpacity.value = withSequence(
         withTiming(1, { duration: 500 }),
-        withTiming(0, { duration: 350 })
+        withTiming(0, { duration: 500 })
       );
     }
   }, [completeSetTrigger]);

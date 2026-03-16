@@ -26,7 +26,7 @@ export default function SettingsModal() {
   const handleResetSession = () => {
     Alert.alert(
       "Reset Session",
-      "This will reset your current set count and rest timer. Continue?",
+      "This will reset your current set count. Continue?",
       [
         { text: "Cancel", style: "cancel" },
         {

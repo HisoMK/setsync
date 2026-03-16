@@ -36,7 +36,7 @@ export function CompleteButton() {
         className="w-full rounded-button py-5"
       >
         <Text className="text-background text-center text-xl font-black uppercase tracking-wider">
-          {isTargetReached ? "Start New Exercise" : "Complete Set"}
+          {isTargetReached ? "Start New Exercise" : "Set Complete"}
         </Text>
       </LinearGradient>
     </Pressable>
