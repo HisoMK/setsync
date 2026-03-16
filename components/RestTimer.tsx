@@ -1,6 +1,7 @@
 import { Audio } from "expo-av";
 import * as Haptics from "expo-haptics";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { LinearGradient } from "expo-linear-gradient";
+import { useCallback, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { CountdownCircleTimer } from "react-native-countdown-circle-timer";
 import Animated, {
@@ -15,60 +16,38 @@ import { formatTime } from "../utils/formatTime";
 
 const restEndSound = require("../assets/sounds/rest-end.wav");
 
-const PHRASES = [
-  "You got this!",
-  "Beast mode",
-  "Built Different",
-  "Absolute Unit",
-  "Nobody said it'd be easy",
-  "The bar won't lift itself",
-];
-
-function randomPhrase(exclude?: string): string {
-  const pool = exclude ? PHRASES.filter((p) => p !== exclude) : PHRASES;
-  return pool[Math.floor(Math.random() * pool.length)];
-}
-
 export function RestTimer() {
   const isResting = useWorkoutStore((state) => state.isResting);
   const isPaused = useWorkoutStore((state) => state.isPaused);
   const restDuration = useWorkoutStore((state) => state.restDuration);
   const setCount = useWorkoutStore((state) => state.setCount);
+  const targetSetCount = useWorkoutStore((state) => state.targetSetCount);
   const soundEnabled = useWorkoutStore((state) => state.soundEnabled);
   const endRest = useWorkoutStore((state) => state.endRest);
   const pauseRest = useWorkoutStore((state) => state.pauseRest);
   const resumeRest = useWorkoutStore((state) => state.resumeRest);
   const stopRest = useWorkoutStore((state) => state.stopRest);
+  const completeSet = useWorkoutStore((state) => state.completeSet);
+  const startNewExercise = useWorkoutStore((state) => state.startNewExercise);
 
-  const [phrase, setPhrase] = useState(() => randomPhrase());
   const [showPulse, setShowPulse] = useState(false);
-  const prevIsResting = useRef(isResting);
 
   const pulseScale = useSharedValue(1);
   const pulseOpacity = useSharedValue(0);
+  const buttonScale = useSharedValue(1);
+  const buttonOpacity = useSharedValue(1);
 
   const pulseStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulseScale.value }],
     opacity: pulseOpacity.value,
   }));
 
-  // Phrase fade-in — driven manually to avoid entering= prop conflicting with
-  // NativeWind's wrap-jsx on Android (react-native-css-interop intercepts
-  // Animated.View and strips/mishandles Reanimated layout animation props).
-  const phraseOpacity = useSharedValue(1);
-  const phraseStyle = useAnimatedStyle(() => ({
-    opacity: phraseOpacity.value,
+  const buttonAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: buttonScale.value }],
+    opacity: buttonOpacity.value,
   }));
 
-  // Pick a new phrase whenever we re-enter the ready state and fade it in
-  useEffect(() => {
-    if (prevIsResting.current && !isResting) {
-      setPhrase((prev) => randomPhrase(prev));
-      phraseOpacity.value = 0;
-      phraseOpacity.value = withTiming(1, { duration: 300 });
-    }
-    prevIsResting.current = isResting;
-  }, [isResting]);
+  const isTargetReached = setCount > 0 && setCount >= targetSetCount;
 
   const triggerPulse = useCallback(() => {
     setShowPulse(true);
@@ -107,6 +86,17 @@ export function RestTimer() {
     endRest();
   };
 
+  const handleCirclePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    setTimeout(() => {
+      if (isTargetReached) {
+        startNewExercise();
+      } else {
+        completeSet();
+      }
+    }, 150);
+  };
+
   return (
     <View className="items-center justify-center gap-6">
       <View style={styles.timerArea}>
@@ -129,8 +119,33 @@ export function RestTimer() {
             )}
           </CountdownCircleTimer>
         ) : (
-          <Animated.View style={phraseStyle}>
-            <Text style={styles.phraseText}>{phrase}</Text>
+          <Animated.View style={buttonAnimStyle}>
+            <Pressable
+              onPress={handleCirclePress}
+              onPressIn={() => {
+                buttonScale.value = withTiming(0.93, { duration: 100 });
+                buttonOpacity.value = withTiming(0.72, { duration: 100 });
+              }}
+              onPressOut={() => {
+                buttonScale.value = withTiming(1, { duration: 150 });
+                buttonOpacity.value = withTiming(1, { duration: 150 });
+              }}
+              disabled={isResting}
+              style={styles.circleButton}
+              accessibilityLabel={
+                isTargetReached ? "Start new exercise" : "Set done"
+              }
+            >
+              <LinearGradient
+                colors={["#D4F56A", "#A3E635", "#7DB52A"]}
+                locations={[0, 0.45, 1]}
+                style={styles.circleGradient}
+              >
+                <Text style={styles.circleButtonLabel}>
+                  {isTargetReached ? "NEW\nEXERCISE" : "SET\nDONE"}
+                </Text>
+              </LinearGradient>
+            </Pressable>
           </Animated.View>
         )}
 
@@ -178,13 +193,35 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     position: "relative",
   },
-  phraseText: {
-    color: "#A3E635",
-    fontSize: 22,
+  circleButton: {
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: colours.accent,
+    shadowColor: colours.accent,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.45,
+    shadowRadius: 18,
+    elevation: 12,
+  },
+  circleGradient: {
+    width: 256,
+    height: 256,
+    borderRadius: 128,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  circleButtonLabel: {
+    color: colours.background,
+    fontSize: 20,
     fontWeight: "900",
     textAlign: "center",
-    paddingHorizontal: 20,
-    lineHeight: 30,
+    letterSpacing: 3,
+    lineHeight: 26,
+    textTransform: "uppercase",
   },
   pulseRing: {
     position: "absolute",

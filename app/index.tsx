@@ -5,7 +5,6 @@ import { router } from "expo-router";
 import { useEffect } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { CompleteButton } from "../components/CompleteButton";
 import { RestTimer } from "../components/RestTimer";
 import { SetCounter } from "../components/SetCounter";
 import { StatusLabel } from "../components/StatusLabel";
@@ -58,9 +57,6 @@ export default function MainScreen() {
           <RestTimer />
         </View>
 
-        <View className="pt-8">
-          <CompleteButton />
-        </View>
       </View>
     </View>
   );

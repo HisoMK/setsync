@@ -1,4 +1,6 @@
+import MaskedView from "@react-native-masked-view/masked-view";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useRef, useState } from "react";
 import {
   Modal,
@@ -24,25 +26,30 @@ export function SetCounter() {
   );
   const [editing, setEditing] = useState(false);
   const [inputValue, setInputValue] = useState("");
+  const [digitWidth, setDigitWidth] = useState(0);
 
   const digitWidthRef = useRef(0);
-  const sweepWidth = useSharedValue(0);
+  const sweepX = useSharedValue(0);
   const sweepOpacity = useSharedValue(0);
 
-  const sweepClipStyle = useAnimatedStyle(() => ({
-    width: sweepWidth.value,
+  const sweepWrapperStyle = useAnimatedStyle(() => ({
     opacity: sweepOpacity.value,
+  }));
+
+  const sweepTranslateStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: sweepX.value }],
   }));
 
   useEffect(() => {
     if (completeSetTrigger > 0) {
-      const target = digitWidthRef.current;
-      sweepWidth.value = 0;
+      const digitW = digitWidthRef.current;
+      // Place gradient fully off-screen left, then travel to fully off-screen right
+      sweepX.value = -digitW;
       sweepOpacity.value = 1;
-      sweepWidth.value = withTiming(target, { duration: 700 });
+      sweepX.value = withTiming(digitW, { duration: 1200 });
       sweepOpacity.value = withSequence(
-        withTiming(1, { duration: 500 }),
-        withTiming(0, { duration: 500 })
+        withTiming(1, { duration: 1200 }),
+        withTiming(0, { duration: 800 })
       );
     }
   }, [completeSetTrigger]);
@@ -78,19 +85,51 @@ export function SetCounter() {
             <Ionicons name="options-outline" size={22} color="#555555" />
           </Pressable>
 
-          {/* Center: big digit with left-to-right green sweep on complete */}
+          {/* Center: big digit — base white text always visible, gradient overlay masked to text shape */}
           <View style={styles.digitWrapper}>
+            {/* Base layer: always-visible white digit */}
             <Text
               style={styles.digit}
               onLayout={(e) => {
-                digitWidthRef.current = e.nativeEvent.layout.width;
+                const w = e.nativeEvent.layout.width;
+                digitWidthRef.current = w;
+                setDigitWidth(w);
               }}
             >
               {setCount}
             </Text>
-            <Animated.View style={[styles.sweepClip, sweepClipStyle]}>
-              <Text style={[styles.digit, styles.digitAccent]}>{setCount}</Text>
-            </Animated.View>
+
+            {/* Overlay layer: LinearGradient clipped to exact text pixel shape */}
+            {digitWidth > 0 && (
+              <Animated.View
+                style={[StyleSheet.absoluteFillObject, sweepWrapperStyle]}
+                pointerEvents="none"
+              >
+                <MaskedView
+                  style={StyleSheet.absoluteFillObject}
+                  maskElement={
+                    <View style={styles.maskContainer}>
+                      <Text style={styles.digit}>{setCount}</Text>
+                    </View>
+                  }
+                >
+                  <Animated.View
+                    style={[
+                      styles.gradientStrip,
+                      { width: digitWidth * 3 },
+                      sweepTranslateStyle,
+                    ]}
+                  >
+                    <LinearGradient
+                      colors={["#F5F5F5", "#A3E635", "#0A0A0A"]}
+                      start={{ x: 0, y: 0.5 }}
+                      end={{ x: 1, y: 0.5 }}
+                      style={StyleSheet.absoluteFillObject}
+                    />
+                  </Animated.View>
+                </MaskedView>
+              </Animated.View>
+            )}
           </View>
 
           {/* Right column: / Y — same fixed width as left column */}
@@ -177,6 +216,7 @@ const styles = StyleSheet.create({
   digitWrapper: {
     position: "relative",
     alignSelf: "center",
+    overflow: "hidden",
   },
   digit: {
     fontSize: 112,
@@ -184,14 +224,14 @@ const styles = StyleSheet.create({
     color: "#F5F5F5",
     lineHeight: 112,
   },
-  digitAccent: {
-    color: "#A3E635",
+  maskContainer: {
+    flex: 1,
+    backgroundColor: "transparent",
   },
-  sweepClip: {
+  gradientStrip: {
     position: "absolute",
     top: 0,
-    left: 0,
     bottom: 0,
-    overflow: "hidden",
+    left: 0,
   },
 });

@@ -30,7 +30,6 @@ interface WorkoutActions {
   endRest: () => void;
   setTargetSetCount: (n: number) => void;
   completeOnboarding: (sets: number, restDuration: number) => void;
-  resetOnboarding: () => void;
   pauseRest: () => void;
   resumeRest: () => void;
   stopRest: () => void;
@@ -108,11 +107,6 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
       restTimeRemaining: restDuration,
       hasCompletedOnboarding: true,
     });
-  },
-
-  resetOnboarding: () => {
-    AsyncStorage.removeItem(STORAGE_KEYS.hasCompletedOnboarding).catch(() => {});
-    set({ hasCompletedOnboarding: false });
   },
 
   pauseRest: () => set({ isPaused: true }),

@@ -21,7 +21,6 @@ export default function SettingsModal() {
   const setRestDuration = useWorkoutStore((s) => s.setRestDuration);
   const setSoundEnabled = useWorkoutStore((s) => s.setSoundEnabled);
   const resetSession = useWorkoutStore((s) => s.resetSession);
-  const resetOnboarding = useWorkoutStore((s) => s.resetOnboarding);
 
   const handleResetSession = () => {
     Alert.alert(
@@ -186,21 +185,6 @@ export default function SettingsModal() {
               <Text style={styles.resetBtnText}>Reset Session</Text>
             </Pressable>
 
-            <Pressable
-              onPress={() => {
-                resetOnboarding();
-                router.back();
-              }}
-              style={({ pressed }) => [
-                styles.resetBtn,
-                styles.devBtn,
-                pressed && styles.resetBtnPressed,
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel="Reset onboarding"
-            >
-              <Text style={styles.devBtnText}>Reset Onboarding (Dev)</Text>
-            </Pressable>
           </View>
         </ScrollView>
       </View>
@@ -331,16 +315,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
     color: colours.destructive,
-    letterSpacing: 0.3,
-  },
-  devBtn: {
-    backgroundColor: "rgba(85,85,85,0.12)",
-    borderColor: "rgba(85,85,85,0.25)",
-  },
-  devBtnText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: colours.muted,
     letterSpacing: 0.3,
   },
 });
