@@ -1,4 +1,5 @@
 import { Audio } from "expo-av";
+import { useFonts, Rajdhani_700Bold } from "@expo-google-fonts/rajdhani";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useCallback, useState } from "react";
@@ -29,6 +30,8 @@ export function RestTimer() {
   const stopRest = useWorkoutStore((state) => state.stopRest);
   const completeSet = useWorkoutStore((state) => state.completeSet);
   const startNewExercise = useWorkoutStore((state) => state.startNewExercise);
+
+  const [fontsLoaded] = useFonts({ Rajdhani_700Bold });
 
   const [showPulse, setShowPulse] = useState(false);
 
@@ -119,34 +122,46 @@ export function RestTimer() {
             )}
           </CountdownCircleTimer>
         ) : (
-          <Animated.View style={buttonAnimStyle}>
-            <Pressable
-              onPress={handleCirclePress}
-              onPressIn={() => {
-                buttonScale.value = withTiming(0.93, { duration: 100 });
-                buttonOpacity.value = withTiming(0.72, { duration: 100 });
-              }}
-              onPressOut={() => {
-                buttonScale.value = withTiming(1, { duration: 150 });
-                buttonOpacity.value = withTiming(1, { duration: 150 });
-              }}
-              disabled={isResting}
-              style={styles.circleButton}
-              accessibilityLabel={
-                isTargetReached ? "Start new exercise" : "Set done"
-              }
-            >
-              <LinearGradient
-                colors={["#D4F56A", "#A3E635", "#7DB52A"]}
-                locations={[0, 0.45, 1]}
-                style={styles.circleGradient}
-              >
-                <Text style={styles.circleButtonLabel}>
-                  {isTargetReached ? "NEW\nEXERCISE" : "SET\nDONE"}
-                </Text>
-              </LinearGradient>
-            </Pressable>
-          </Animated.View>
+          <Pressable
+            onPress={handleCirclePress}
+            onPressIn={() => {
+              buttonScale.value = withTiming(0.93, { duration: 100 });
+              buttonOpacity.value = withTiming(0.72, { duration: 100 });
+            }}
+            onPressOut={() => {
+              buttonScale.value = withTiming(1, { duration: 150 });
+              buttonOpacity.value = withTiming(1, { duration: 150 });
+            }}
+            disabled={isResting}
+            style={styles.fullButtonPressable}
+            accessibilityLabel={
+              isTargetReached ? "Start new exercise" : "Set done"
+            }
+          >
+            <Animated.View style={[styles.fullButtonAnimated, buttonAnimStyle]}>
+              <View style={styles.outerRing} pointerEvents="none" />
+              <View style={styles.buttonShadow}>
+                <View style={styles.circleButton}>
+                  <LinearGradient
+                    colors={["#7DB52A", "#A3E635", "#C8F035"]}
+                    locations={[0, 0.5, 1]}
+                    start={{ x: 0.35, y: 0.35 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.circleGradient}
+                  >
+                    <Text
+                      style={[
+                        styles.circleButtonLabel,
+                        fontsLoaded && { fontFamily: "Rajdhani_700Bold" },
+                      ]}
+                    >
+                      {isTargetReached ? "NEW\nEXERCISE" : "SET\nDONE"}
+                    </Text>
+                  </LinearGradient>
+                </View>
+              </View>
+            </Animated.View>
+          </Pressable>
         )}
 
         {/* Pulse ring radiates outward after rest completes — not looping */}
@@ -185,42 +200,71 @@ export function RestTimer() {
   );
 }
 
+// Shared constants matching CountdownCircleTimer props exactly
+const TIMER_SIZE = 260;
+const STROKE_WIDTH = 20;
+const INNER_DIAMETER = TIMER_SIZE - STROKE_WIDTH * 2; // 220
+
 const styles = StyleSheet.create({
   timerArea: {
-    width: 260,
-    height: 260,
+    width: TIMER_SIZE,
+    height: TIMER_SIZE,
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
   },
-  circleButton: {
-    width: 260,
-    height: 260,
-    borderRadius: 130,
+  fullButtonPressable: {
+    width: TIMER_SIZE,
+    height: TIMER_SIZE,
+    borderRadius: TIMER_SIZE / 2,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 2,
-    borderColor: colours.accent,
+  },
+  fullButtonAnimated: {
+    width: TIMER_SIZE,
+    height: TIMER_SIZE,
+    borderRadius: TIMER_SIZE / 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  outerRing: {
+    position: "absolute",
+    width: TIMER_SIZE,
+    height: TIMER_SIZE,
+    borderRadius: TIMER_SIZE / 2,
+    borderWidth: STROKE_WIDTH,
+    borderColor: "#4D6B19",
+  },
+  buttonShadow: {
+    borderRadius: INNER_DIAMETER / 2,
     shadowColor: colours.accent,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.45,
     shadowRadius: 18,
     elevation: 12,
   },
+  circleButton: {
+    width: INNER_DIAMETER,
+    height: INNER_DIAMETER,
+    borderRadius: INNER_DIAMETER / 2,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
   circleGradient: {
-    width: 256,
-    height: 256,
-    borderRadius: 128,
+    width: INNER_DIAMETER,
+    height: INNER_DIAMETER,
+    borderRadius: INNER_DIAMETER / 2,
     alignItems: "center",
     justifyContent: "center",
   },
   circleButtonLabel: {
     color: colours.background,
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: "900",
     textAlign: "center",
     letterSpacing: 3,
-    lineHeight: 26,
+    lineHeight: 28,
     textTransform: "uppercase",
   },
   pulseRing: {
