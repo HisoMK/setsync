@@ -13,6 +13,7 @@ const STORAGE_KEYS = {
 interface WorkoutState {
   setCount: number;
   isResting: boolean;
+  isOvertime: boolean;
   restDuration: number;
   restTimeRemaining: number;
   targetSetCount: number;
@@ -50,6 +51,7 @@ const persist = async (key: string, value: string) => {
 export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
   setCount: 0,
   isResting: false,
+  isOvertime: false,
   restDuration: DEFAULT_REST_SECONDS,
   restTimeRemaining: DEFAULT_REST_SECONDS,
   targetSetCount: 4,
@@ -64,6 +66,7 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
     set((state) => ({
       setCount: next,
       isResting: true,
+      isOvertime: false,
       isPaused: false,
       restTimeRemaining: state.restDuration,
       completeSetTrigger: state.completeSetTrigger + 1,
@@ -75,6 +78,7 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
     set((state) => ({
       setCount: 0,
       isResting: false,
+      isOvertime: false,
       isPaused: false,
       restTimeRemaining: state.restDuration,
     }));
@@ -90,7 +94,7 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
       setCount: Math.max(0, state.setCount + delta),
     })),
 
-  endRest: () => set({ isResting: false, isPaused: false }),
+  endRest: () => set({ isOvertime: true }),
 
   setTargetSetCount: (n) => {
     persist(STORAGE_KEYS.targetSetCount, String(n));
@@ -116,6 +120,7 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
   stopRest: () =>
     set((state) => ({
       isResting: false,
+      isOvertime: false,
       isPaused: false,
       restTimeRemaining: state.restDuration,
     })),
@@ -125,6 +130,7 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
     set((state) => ({
       setCount: 0,
       isResting: false,
+      isOvertime: false,
       isPaused: false,
       restTimeRemaining: state.restDuration,
     }));

@@ -11,7 +11,11 @@ export const colours = {
   muted: "#555555",
   destructive: "#EF4444",
   success: "#A3E635",
+  overtime: "#B91C1C",
+  "overtime-mid": "#DC2626",
 } as const;
+
+export const overtimeGradient = ["#7F1D1D", colours.overtime, colours["overtime-mid"]] as const;
 
 /** Single-color array for timer ring (accent). */
 export const timerRingColors = [colours.accent] as const;

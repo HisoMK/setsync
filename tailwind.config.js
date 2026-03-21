@@ -14,6 +14,8 @@ module.exports = {
         muted: "#555555",
         destructive: "#EF4444",
         success: "#A3E635",
+        overtime: "#B91C1C",
+        "overtime-mid": "#DC2626",
       },
       borderRadius: {
         card: "1.25rem",
