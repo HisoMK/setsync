@@ -2,17 +2,78 @@ import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useEffect } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { useEffect, useRef } from "react";
+import { AppState, Platform, Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { RestTimer } from "../components/RestTimer";
 import { SetCounter } from "../components/SetCounter";
 import { StatusLabel } from "../components/StatusLabel";
 import { useWorkoutStore } from "../store/workoutStore";
+import {
+  dismissPersistentNotification,
+  registerPersistentNotificationChannel,
+  showExercisingNotification,
+  showRestingNotification,
+  showRestOverNotification,
+} from "../utils/persistentNotification";
 
 export default function MainScreen() {
   const insets = useSafeAreaInsets();
   const isResting = useWorkoutStore((state) => state.isResting);
+  const endRest = useWorkoutStore((state) => state.endRest);
+  const appStateRef = useRef(AppState.currentState);
+
+  useEffect(() => {
+    if (Platform.OS === "android") {
+      void registerPersistentNotificationChannel();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS === "web") {
+      return undefined;
+    }
+    const sub = AppState.addEventListener("change", (next) => {
+      const prev = appStateRef.current;
+      console.log("[AppState]", prev, "→", next);
+
+      if (next === "active" && prev !== "active") {
+        void dismissPersistentNotification();
+        const { timerEndTime, isResting: resting, isOvertime } =
+          useWorkoutStore.getState();
+        if (
+          timerEndTime != null &&
+          Date.now() >= timerEndTime &&
+          resting &&
+          !isOvertime
+        ) {
+          endRest();
+        }
+      } else if (prev === "active" && next !== "active") {
+        const { isOvertime, isResting: resting, setCount, targetSetCount } =
+          useWorkoutStore.getState();
+        console.log(
+          "[AppState] backgrounding — isOvertime:",
+          isOvertime,
+          "isResting:",
+          resting,
+        );
+        if (isOvertime) {
+          console.log("[AppState] calling showRestOverNotification");
+          void showRestOverNotification(setCount, targetSetCount);
+        } else if (resting) {
+          console.log("[AppState] calling showRestingNotification");
+          void showRestingNotification(setCount, targetSetCount);
+        } else {
+          console.log("[AppState] calling showExercisingNotification");
+          void showExercisingNotification(setCount, targetSetCount);
+        }
+      }
+
+      appStateRef.current = next;
+    });
+    return () => sub.remove();
+  }, [endRest]);
 
   useEffect(() => {
     if (isResting) {

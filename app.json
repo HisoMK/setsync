@@ -16,6 +16,8 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.hisomk.setsync",
+      "permissions": ["FOREGROUND_SERVICE", "FOREGROUND_SERVICE_HEALTH"],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -32,10 +34,23 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "color": "#A3E635"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a19bca16-2c32-4c0b-9ad9-417da69743be"
+      }
+    },
+    "owner": "hisomk"
   }
 }

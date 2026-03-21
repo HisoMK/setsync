@@ -1,12 +1,15 @@
 import { create } from "zustand";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { DEFAULT_REST_SECONDS } from "../constants/config";
+import { cancelNotification } from "../utils/notifications";
+import { dismissPersistentNotification } from "../utils/persistentNotification";
 
 const STORAGE_KEYS = {
   restDuration: "@setsync/restDuration",
   targetSetCount: "@setsync/targetSetCount",
   hasCompletedOnboarding: "@setsync/hasCompletedOnboarding",
   soundEnabled: "@setsync/soundEnabled",
+  vibrationEnabled: "@setsync/vibrationEnabled",
   setCount: "@setsync/setCount",
 } as const;
 
@@ -19,8 +22,12 @@ interface WorkoutState {
   targetSetCount: number;
   hasCompletedOnboarding: boolean;
   soundEnabled: boolean;
+  vibrationEnabled: boolean;
   isPaused: boolean;
   completeSetTrigger: number;
+  scheduledNotificationId: string | null;
+  /** Epoch ms when the current rest period should end; null when not resting on a timed rest. */
+  timerEndTime: number | null;
 }
 
 interface WorkoutActions {
@@ -36,6 +43,8 @@ interface WorkoutActions {
   stopRest: () => void;
   startNewExercise: () => void;
   setSoundEnabled: (enabled: boolean) => void;
+  setVibrationEnabled: (enabled: boolean) => void;
+  setScheduledNotificationId: (id: string | null) => void;
 }
 
 type WorkoutStore = WorkoutState & WorkoutActions;
@@ -57,8 +66,11 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
   targetSetCount: 4,
   hasCompletedOnboarding: false,
   soundEnabled: true,
+  vibrationEnabled: true,
   isPaused: false,
   completeSetTrigger: 0,
+  scheduledNotificationId: null,
+  timerEndTime: null,
 
   completeSet: () => {
     const next = get().setCount + 1;
@@ -70,10 +82,15 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
       isPaused: false,
       restTimeRemaining: state.restDuration,
       completeSetTrigger: state.completeSetTrigger + 1,
+      timerEndTime: Date.now() + state.restDuration * 1000,
     }));
   },
 
   resetSession: () => {
+    const sid = get().scheduledNotificationId;
+    if (sid != null) {
+      void cancelNotification(sid);
+    }
     persist(STORAGE_KEYS.setCount, "0");
     set((state) => ({
       setCount: 0,
@@ -81,6 +98,8 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
       isOvertime: false,
       isPaused: false,
       restTimeRemaining: state.restDuration,
+      scheduledNotificationId: null,
+      timerEndTime: null,
     }));
   },
 
@@ -94,7 +113,7 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
       setCount: Math.max(0, state.setCount + delta),
     })),
 
-  endRest: () => set({ isOvertime: true }),
+  endRest: () => set({ isOvertime: true, timerEndTime: null }),
 
   setTargetSetCount: (n) => {
     persist(STORAGE_KEYS.targetSetCount, String(n));
@@ -123,9 +142,15 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
       isOvertime: false,
       isPaused: false,
       restTimeRemaining: state.restDuration,
+      timerEndTime: null,
     })),
 
   startNewExercise: () => {
+    const sid = get().scheduledNotificationId;
+    if (sid != null) {
+      void cancelNotification(sid);
+    }
+    void dismissPersistentNotification();
     persist(STORAGE_KEYS.setCount, "0");
     set((state) => ({
       setCount: 0,
@@ -133,6 +158,8 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
       isOvertime: false,
       isPaused: false,
       restTimeRemaining: state.restDuration,
+      scheduledNotificationId: null,
+      timerEndTime: null,
     }));
   },
 
@@ -140,6 +167,13 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
     persist(STORAGE_KEYS.soundEnabled, String(enabled));
     set({ soundEnabled: enabled });
   },
+
+  setVibrationEnabled: (enabled) => {
+    persist(STORAGE_KEYS.vibrationEnabled, String(enabled));
+    set({ vibrationEnabled: enabled });
+  },
+
+  setScheduledNotificationId: (id) => set({ scheduledNotificationId: id }),
 }));
 
 /**
@@ -148,14 +182,21 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
  */
 export async function hydrateStore(): Promise<void> {
   try {
-    const [restDuration, targetSetCount, hasCompletedOnboarding, soundEnabled, setCount] =
-      await AsyncStorage.multiGet([
-        STORAGE_KEYS.restDuration,
-        STORAGE_KEYS.targetSetCount,
-        STORAGE_KEYS.hasCompletedOnboarding,
-        STORAGE_KEYS.soundEnabled,
-        STORAGE_KEYS.setCount,
-      ]);
+    const [
+      restDuration,
+      targetSetCount,
+      hasCompletedOnboarding,
+      soundEnabled,
+      vibrationEnabled,
+      setCount,
+    ] = await AsyncStorage.multiGet([
+      STORAGE_KEYS.restDuration,
+      STORAGE_KEYS.targetSetCount,
+      STORAGE_KEYS.hasCompletedOnboarding,
+      STORAGE_KEYS.soundEnabled,
+      STORAGE_KEYS.vibrationEnabled,
+      STORAGE_KEYS.setCount,
+    ]);
 
     const updates: Partial<WorkoutState> = {};
 
@@ -176,6 +217,10 @@ export async function hydrateStore(): Promise<void> {
 
     if (soundEnabled[1] === "false") {
       updates.soundEnabled = false;
+    }
+
+    if (vibrationEnabled[1] === "false") {
+      updates.vibrationEnabled = false;
     }
 
     const storedSetCount = parseInt(setCount[1] ?? "", 10);

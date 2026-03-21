@@ -1,7 +1,9 @@
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useCallback, useRef, useState } from "react";
-import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
+import { Animated, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Notifications from "expo-notifications";
 import {
   DEFAULT_REST_SECONDS,
   DEFAULT_TARGET_SETS,
@@ -80,9 +82,15 @@ function PickerControl({
 
 // ── Step 1 — Welcome ─────────────────────────────────────────────────────────
 
-function StepWelcome({ onNext }: { onNext: () => void }) {
+function StepWelcome({
+  onNext,
+  bottomInset,
+}: {
+  onNext: () => void;
+  bottomInset: number;
+}) {
   return (
-    <View style={styles.step}>
+    <View style={[styles.step, { paddingBottom: Math.max(40, bottomInset + 24) }]}>
       <View style={styles.stepBody}>
         <Text style={styles.appName}>SetSync</Text>
         <Text style={styles.tagline}>Track your sets{"\n"}and rest smarter</Text>
@@ -98,13 +106,15 @@ function StepTargetSets({
   value,
   onAdjust,
   onNext,
+  bottomInset,
 }: {
   value: number;
   onAdjust: (delta: number) => void;
   onNext: () => void;
+  bottomInset: number;
 }) {
   return (
-    <View style={styles.step}>
+    <View style={[styles.step, { paddingBottom: Math.max(40, bottomInset + 24) }]}>
       <View style={styles.stepBody}>
         <Text style={styles.heading}>How many sets{"\n"}per exercise?</Text>
         <PickerControl
@@ -130,13 +140,15 @@ function StepRestDuration({
   value,
   onAdjust,
   onNext,
+  bottomInset,
 }: {
   value: number;
   onAdjust: (delta: number) => void;
   onNext: () => void;
+  bottomInset: number;
 }) {
   return (
-    <View style={styles.step}>
+    <View style={[styles.step, { paddingBottom: Math.max(40, bottomInset + 24) }]}>
       <View style={styles.stepBody}>
         <Text style={styles.heading}>How long do you rest{"\n"}between sets?</Text>
         <PickerControl
@@ -161,13 +173,15 @@ function StepSummary({
   targetSets,
   restDuration,
   onFinish,
+  bottomInset,
 }: {
   targetSets: number;
   restDuration: number;
   onFinish: () => void;
+  bottomInset: number;
 }) {
   return (
-    <View style={styles.step}>
+    <View style={[styles.step, { paddingBottom: Math.max(40, bottomInset + 24) }]}>
       <View style={styles.stepBody}>
         <View style={styles.summaryHeading}>
           <Text style={styles.heading}>You're all set.</Text>
@@ -214,6 +228,7 @@ function ProgressDots({ step }: { step: number }) {
 // ── Root ─────────────────────────────────────────────────────────────────────
 
 export default function OnboardingScreen() {
+  const insets = useSafeAreaInsets();
   const [step, setStep] = useState(1);
   const [targetSets, setTargetSets] = useState(DEFAULT_TARGET_SETS);
   const [restDuration, setRestDuration] = useState(DEFAULT_REST_SECONDS);
@@ -258,8 +273,11 @@ export default function OnboardingScreen() {
     if (step < TOTAL_STEPS) animateToStep(step + 1);
   };
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
     completeOnboarding(targetSets, restDuration);
+    if (Platform.OS === "ios" || Platform.OS === "android") {
+      await Notifications.requestPermissionsAsync();
+    }
     router.replace("/");
   };
 
@@ -289,12 +307,15 @@ export default function OnboardingScreen() {
           { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
         ]}
       >
-        {step === 1 && <StepWelcome onNext={handleNext} />}
+        {step === 1 && (
+          <StepWelcome onNext={handleNext} bottomInset={insets.bottom} />
+        )}
         {step === 2 && (
           <StepTargetSets
             value={targetSets}
             onAdjust={adjustSets}
             onNext={handleNext}
+            bottomInset={insets.bottom}
           />
         )}
         {step === 3 && (
@@ -302,6 +323,7 @@ export default function OnboardingScreen() {
             value={restDuration}
             onAdjust={adjustRest}
             onNext={handleNext}
+            bottomInset={insets.bottom}
           />
         )}
         {step === 4 && (
@@ -309,6 +331,7 @@ export default function OnboardingScreen() {
             targetSets={targetSets}
             restDuration={restDuration}
             onFinish={handleFinish}
+            bottomInset={insets.bottom}
           />
         )}
       </Animated.View>
@@ -350,7 +373,6 @@ const styles = StyleSheet.create({
   step: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingBottom: 40,
     justifyContent: "space-between",
   },
   stepBody: {

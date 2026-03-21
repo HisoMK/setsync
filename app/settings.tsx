@@ -17,9 +17,11 @@ export default function SettingsModal() {
   const targetSetCount = useWorkoutStore((s) => s.targetSetCount);
   const restDuration = useWorkoutStore((s) => s.restDuration);
   const soundEnabled = useWorkoutStore((s) => s.soundEnabled);
+  const vibrationEnabled = useWorkoutStore((s) => s.vibrationEnabled);
   const setTargetSetCount = useWorkoutStore((s) => s.setTargetSetCount);
   const setRestDuration = useWorkoutStore((s) => s.setRestDuration);
   const setSoundEnabled = useWorkoutStore((s) => s.setSoundEnabled);
+  const setVibrationEnabled = useWorkoutStore((s) => s.setVibrationEnabled);
   const resetSession = useWorkoutStore((s) => s.resetSession);
 
   const handleResetSession = () => {
@@ -167,6 +169,26 @@ export default function SettingsModal() {
                 true: colours["accent-dim"],
               }}
               thumbColor={soundEnabled ? colours.accent : colours.muted}
+              ios_backgroundColor={colours["surface-2"]}
+            />
+          </View>
+
+          <View style={styles.divider} />
+
+          {/* Vibration */}
+          <View style={styles.row}>
+            <View style={styles.rowMeta}>
+              <Text style={styles.rowTitle}>Vibration</Text>
+              <Text style={styles.rowSub}>During overtime</Text>
+            </View>
+            <Switch
+              value={vibrationEnabled}
+              onValueChange={setVibrationEnabled}
+              trackColor={{
+                false: colours["surface-2"],
+                true: colours["accent-dim"],
+              }}
+              thumbColor={vibrationEnabled ? colours.accent : colours.muted}
               ios_backgroundColor={colours["surface-2"]}
             />
           </View>

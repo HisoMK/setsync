@@ -3,7 +3,7 @@ import { useFonts, Rajdhani_700Bold } from "@expo-google-fonts/rajdhani";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { CountdownCircleTimer } from "react-native-countdown-circle-timer";
 import Animated, {
   cancelAnimation,
@@ -17,6 +17,12 @@ import Animated, {
 import { useWorkoutStore } from "../store/workoutStore";
 import { colours, overtimeGradient } from "../constants/colours";
 import { formatTime } from "../utils/formatTime";
+import { cancelNotification, scheduleRestEndNotification } from "../utils/notifications";
+import {
+  dismissPersistentNotification,
+  showRestingNotification,
+  showRestOverNotification,
+} from "../utils/persistentNotification";
 
 /** Overtime ring gradient for CountdownCircleTimer (matches library ColorFormat). */
 const OVERTIME_RING_COLORS: [`#${string}`, `#${string}`] = [
@@ -35,10 +41,14 @@ export function RestTimer() {
   const setCount = useWorkoutStore((state) => state.setCount);
   const targetSetCount = useWorkoutStore((state) => state.targetSetCount);
   const soundEnabled = useWorkoutStore((state) => state.soundEnabled);
+  const vibrationEnabled = useWorkoutStore((state) => state.vibrationEnabled);
   const endRest = useWorkoutStore((state) => state.endRest);
   const stopRest = useWorkoutStore((state) => state.stopRest);
   const completeSet = useWorkoutStore((state) => state.completeSet);
   const startNewExercise = useWorkoutStore((state) => state.startNewExercise);
+  const setScheduledNotificationId = useWorkoutStore(
+    (state) => state.setScheduledNotificationId
+  );
 
   const [fontsLoaded] = useFonts({ Rajdhani_700Bold });
 
@@ -54,7 +64,19 @@ export function RestTimer() {
   const shakeX = useSharedValue(0);
 
   const overtimeSoundTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const overtimeVibrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
   const overtimeSoundRef = useRef<Audio.Sound | null>(null);
+  const prevIsOvertimeRef = useRef(isOvertime);
+
+  useEffect(() => {
+    if (isOvertime && !prevIsOvertimeRef.current) {
+      const { setCount: sc, targetSetCount: tc } = useWorkoutStore.getState();
+      void showRestOverNotification(sc, tc);
+    }
+    prevIsOvertimeRef.current = isOvertime;
+  }, [isOvertime]);
 
   useEffect(() => {
     if (!isOvertime || !soundEnabled) {
@@ -148,6 +170,50 @@ export function RestTimer() {
   }, [isOvertime, soundEnabled]);
 
   useEffect(() => {
+    console.log('[Vibration] useEffect fired — isOvertime:', isOvertime, 'vibrationEnabled:', vibrationEnabled);
+    if (!isOvertime || !vibrationEnabled) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const clearOvertimeVibrationTimer = () => {
+      if (overtimeVibrationTimerRef.current != null) {
+        clearTimeout(overtimeVibrationTimerRef.current);
+        overtimeVibrationTimerRef.current = null;
+      }
+    };
+
+    const runVibrationCycle = () => {
+      if (cancelled) return;
+      if (Platform.OS !== "web") {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      }
+      clearOvertimeVibrationTimer();
+      overtimeVibrationTimerRef.current = setTimeout(() => {
+        overtimeVibrationTimerRef.current = null;
+        if (cancelled) return;
+        if (Platform.OS !== "web") {
+          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        }
+        clearOvertimeVibrationTimer();
+        overtimeVibrationTimerRef.current = setTimeout(() => {
+          overtimeVibrationTimerRef.current = null;
+          if (cancelled) return;
+          runVibrationCycle();
+        }, 2000);
+      }, 100);
+    };
+
+    runVibrationCycle();
+
+    return () => {
+      cancelled = true;
+      clearOvertimeVibrationTimer();
+    };
+  }, [isOvertime, vibrationEnabled]);
+
+  useEffect(() => {
     if (isOvertime) {
       stopTimerScale.value = 1;
       stopTimerOpacity.value = 1;
@@ -194,6 +260,16 @@ export function RestTimer() {
 
   const isTargetReached = setCount > 0 && setCount >= targetSetCount;
 
+  const stopRestWithCancel = useCallback(() => {
+    const id = useWorkoutStore.getState().scheduledNotificationId;
+    if (id != null) {
+      void cancelNotification(id);
+    }
+    setScheduledNotificationId(null);
+    stopRest();
+    void dismissPersistentNotification();
+  }, [stopRest, setScheduledNotificationId]);
+
   const triggerPulse = useCallback(() => {
     setShowPulse(true);
     pulseScale.value = 1;
@@ -212,25 +288,11 @@ export function RestTimer() {
     setTimeout(() => setShowPulse(false), 1600);
   }, [pulseScale, pulseOpacity]);
 
-  const handleComplete = async () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    if (soundEnabled) {
-      try {
-        const { sound } = await Audio.Sound.createAsync(
-          require("../assets/sounds/rest-end.wav")
-        );
-        await sound.playAsync();
-        sound.setOnPlaybackStatusUpdate((status) => {
-          if (status.isLoaded && status.didJustFinish) {
-            sound.unloadAsync();
-          }
-        });
-      } catch {
-        // Ignore audio errors
-      }
-    }
+  /** endRest() must run synchronously — awaiting expo-av before it can stall in the foreground. Overtime audio is the isOvertime effect. */
+  const handleComplete = useCallback(() => {
     endRest();
-  };
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }, [endRest]);
 
   const handleCirclePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
@@ -238,7 +300,22 @@ export function RestTimer() {
       if (isTargetReached) {
         startNewExercise();
       } else {
+        const { setCount: preSetCount, targetSetCount: preTargetSetCount } =
+          useWorkoutStore.getState();
         completeSet();
+        const { timerEndTime } = useWorkoutStore.getState();
+        if (timerEndTime != null) {
+          void scheduleRestEndNotification(
+            timerEndTime,
+            preSetCount + 1,
+            preTargetSetCount
+          ).then((notificationId) => {
+            if (notificationId) {
+              setScheduledNotificationId(notificationId);
+            }
+          });
+        }
+        void showRestingNotification(preSetCount, preTargetSetCount);
       }
     }, 150);
   };
@@ -263,7 +340,7 @@ export function RestTimer() {
                 : { colors: colours.accent })}
               trailColor={colours.surface}
               onComplete={() => {
-                void handleComplete();
+                handleComplete();
                 return { shouldRepeat: false };
               }}
             >
@@ -291,7 +368,7 @@ export function RestTimer() {
                 <Pressable
                   onPress={() => {
                     triggerPulse();
-                    stopRest();
+                    stopRestWithCancel();
                   }}
                   onPressIn={() => {
                     stopTimerScale.value = withTiming(0.93, { duration: 100 });
@@ -391,7 +468,7 @@ export function RestTimer() {
       {isResting && !isOvertime && (
         <View className="w-[260px] items-center justify-center">
           <Pressable
-            onPress={stopRest}
+            onPress={stopRestWithCancel}
             className="w-[160px] py-3 rounded-control bg-destructive items-center active:opacity-80"
             accessibilityLabel="Stop rest timer"
           >
