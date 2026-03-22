@@ -36,14 +36,11 @@ export async function scheduleRestEndNotification(
     return "";
   }
 
-  const title =
-    setCount < targetSetCount
-      ? `Rest Over — Set ${setCount} of ${targetSetCount} Complete`
-      : "Rest Over — Exercise Complete";
+  const title = "Rest Over";
   const body =
     setCount < targetSetCount
-      ? "Log your next set"
-      : "Log your next exercise";
+      ? `Set ${setCount} of ${targetSetCount} complete — log your next set`
+      : "All sets complete — log your next exercise";
 
   const dateTrigger: Notifications.DateTriggerInput = {
     type: Notifications.SchedulableTriggerInputTypes.DATE,

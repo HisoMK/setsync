@@ -1,7 +1,10 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
+import { router } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,8 +13,6 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { router } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colours } from "../constants/colours";
 import { MAX_REST_SECONDS, MIN_REST_SECONDS } from "../constants/config";
@@ -29,23 +30,22 @@ export default function SettingsModal() {
   const setRestDuration = useWorkoutStore((s) => s.setRestDuration);
   const setSoundEnabled = useWorkoutStore((s) => s.setSoundEnabled);
   const setNotificationsEnabled = useWorkoutStore(
-    (s) => s.setNotificationsEnabled
+    (s) => s.setNotificationsEnabled,
   );
   const setVibrationEnabled = useWorkoutStore((s) => s.setVibrationEnabled);
-  const resetSession = useWorkoutStore((s) => s.resetSession);
 
   const [restMinutesStr, setRestMinutesStr] = useState(() =>
-    String(Math.floor(useWorkoutStore.getState().restDuration / 60))
+    String(Math.floor(useWorkoutStore.getState().restDuration / 60)),
   );
   const [restSecondsStr, setRestSecondsStr] = useState(() =>
-    String(useWorkoutStore.getState().restDuration % 60)
+    String(useWorkoutStore.getState().restDuration % 60),
   );
   const [restDurationError, setRestDurationError] = useState<string | null>(
-    null
+    null,
   );
   const [restConfirmLabel, setRestConfirmLabel] = useState("Confirm");
   const restSavedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null
+    null,
   );
 
   useEffect(() => {
@@ -62,7 +62,7 @@ export default function SettingsModal() {
       setRestMinutesStr(String(Math.floor(total / 60)));
       setRestSecondsStr(String(total % 60));
       setRestDurationError(null);
-    }, [])
+    }, []),
   );
 
   const handleConfirmRestDuration = () => {
@@ -84,7 +84,7 @@ export default function SettingsModal() {
     const totalSeconds = m * 60 + s;
     if (totalSeconds < MIN_REST_SECONDS || totalSeconds > MAX_REST_SECONDS) {
       setRestDurationError(
-        `Rest must be between ${formatTime(MIN_REST_SECONDS)} and ${formatTime(MAX_REST_SECONDS)}.`
+        `Rest must be between ${formatTime(MIN_REST_SECONDS)} and ${formatTime(MAX_REST_SECONDS)}.`,
       );
       return;
     }
@@ -106,21 +106,11 @@ export default function SettingsModal() {
     setRestDurationError(null);
   };
 
-  const handleResetSession = () => {
+  const handleRemoveAdsPress = () => {
     Alert.alert(
-      "Reset Session",
-      "This will reset your current set count. Continue?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Reset",
-          style: "destructive",
-          onPress: () => {
-            resetSession();
-            router.back();
-          },
-        },
-      ]
+      "Coming soon",
+      "Purchasing will be available in a future update",
+      [{ text: "OK" }],
     );
   };
 
@@ -142,7 +132,32 @@ export default function SettingsModal() {
           </Pressable>
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 8 }}
+        >
+          {/* Remove ads */}
+          <Pressable
+            onPress={handleRemoveAdsPress}
+            accessibilityRole="button"
+            accessibilityLabel="Remove ads, one-time purchase"
+            className="mb-5 flex-row items-center justify-between rounded-card border-2 border-accent bg-surface px-4 py-4 active:opacity-90"
+          >
+            <View className="mr-3 flex-1">
+              <Text className="text-base font-bold text-primary">
+                Remove ads
+              </Text>
+              <Text className="mt-1 text-xs text-muted">
+                One-time purchase · £2.99
+              </Text>
+            </View>
+            <View className="rounded-full bg-accent px-4 py-2">
+              <Text className="text-sm font-extrabold text-background">
+                Buy
+              </Text>
+            </View>
+          </Pressable>
+
           {/* Target Sets */}
           <View style={styles.row}>
             <View style={styles.rowMeta}>
@@ -260,9 +275,7 @@ export default function SettingsModal() {
                 false: colours["surface-2"],
                 true: colours["accent-dim"],
               }}
-              thumbColor={
-                notificationsEnabled ? colours.accent : colours.muted
-              }
+              thumbColor={notificationsEnabled ? colours.accent : colours.muted}
               ios_backgroundColor={colours["surface-2"]}
             />
           </View>
@@ -306,23 +319,18 @@ export default function SettingsModal() {
               ios_backgroundColor={colours["surface-2"]}
             />
           </View>
-
-          {/* Reset Session */}
-          <View style={styles.resetSection}>
-            <Pressable
-              onPress={handleResetSession}
-              style={({ pressed }) => [
-                styles.resetBtn,
-                pressed && styles.resetBtnPressed,
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel="Reset session"
-            >
-              <Text style={styles.resetBtnText}>Reset Session</Text>
-            </Pressable>
-
-          </View>
         </ScrollView>
+
+        <Pressable
+          onPress={() => Linking.openURL("PLACEHOLDER_URL")}
+          accessibilityRole="link"
+          accessibilityLabel="Privacy policy"
+          className="mt-10 items-center self-center py-2 active:opacity-70"
+        >
+          <Text className="text-center text-xs text-muted underline">
+            Privacy policy
+          </Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -501,27 +509,5 @@ const styles = StyleSheet.create({
   },
   stepValueWide: {
     minWidth: 64,
-  },
-  resetSection: {
-    paddingTop: 32,
-    paddingBottom: 8,
-    gap: 12,
-  },
-  resetBtn: {
-    borderRadius: 12,
-    paddingVertical: 16,
-    backgroundColor: "rgba(239,68,68,0.12)",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(239,68,68,0.25)",
-  },
-  resetBtnPressed: {
-    backgroundColor: "rgba(239,68,68,0.2)",
-  },
-  resetBtnText: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: colours.destructive,
-    letterSpacing: 0.3,
   },
 });
