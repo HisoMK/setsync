@@ -322,7 +322,9 @@ export default function SettingsModal() {
         </ScrollView>
 
         <Pressable
-          onPress={() => Linking.openURL("PLACEHOLDER_URL")}
+          onPress={() =>
+            Linking.openURL("https://setsync-policy.lovable.app/")
+          }
           accessibilityRole="link"
           accessibilityLabel="Privacy policy"
           className="mt-10 items-center self-center py-2 active:opacity-70"
