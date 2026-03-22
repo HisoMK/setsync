@@ -62,6 +62,7 @@ export function RestTimer() {
   const stopTimerScale = useSharedValue(1);
   const stopTimerOpacity = useSharedValue(1);
   const shakeX = useSharedValue(0);
+  const hintBounceY = useSharedValue(0);
 
   const overtimeSoundTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const overtimeVibrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
@@ -258,6 +259,42 @@ export function RestTimer() {
     transform: [{ translateX: shakeX.value }],
   }));
 
+  const hintBounceStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: hintBounceY.value }],
+  }));
+
+  const hintText =
+    isResting
+      ? null
+      : setCount === targetSetCount
+        ? "Tap above to start a new exercise"
+        : setCount === 0 || setCount === 1
+          ? "Tap above when you have completed a set"
+          : null;
+
+  useEffect(() => {
+    if (hintText != null) {
+      hintBounceY.value = 0;
+      hintBounceY.value = withRepeat(
+        withSequence(
+          withTiming(-4, { duration: 200 }),
+          withTiming(0, { duration: 200 }),
+          withTiming(-4, { duration: 200 }),
+          withTiming(0, { duration: 200 }),
+          withDelay(2000, withTiming(0, { duration: 0 }))
+        ),
+        -1,
+        false
+      );
+      return () => {
+        cancelAnimation(hintBounceY);
+        hintBounceY.value = 0;
+      };
+    }
+    cancelAnimation(hintBounceY);
+    hintBounceY.value = 0;
+  }, [hintText, hintBounceY]);
+
   const isTargetReached = setCount > 0 && setCount >= targetSetCount;
 
   const stopRestWithCancel = useCallback(() => {
@@ -323,7 +360,8 @@ export function RestTimer() {
 
   return (
     <View className="items-center justify-center gap-6">
-      <View style={styles.timerArea}>
+      <View className="items-center">
+        <View style={styles.timerArea}>
         {isResting ? (
           <>
             <CountdownCircleTimer
@@ -463,6 +501,16 @@ export function RestTimer() {
         {/* Pulse ring radiates outward after rest completes — not looping */}
         {showPulse && (
           <Animated.View style={[styles.pulseRing, pulseStyle]} />
+        )}
+        </View>
+
+        {hintText != null && (
+          <Animated.View
+            style={hintBounceStyle}
+            className="mt-8 w-[260px] items-center px-2"
+          >
+            <Text className="text-center text-xs text-muted">{hintText}</Text>
+          </Animated.View>
         )}
       </View>
 
