@@ -303,8 +303,9 @@ export function RestTimer() {
         const { setCount: preSetCount, targetSetCount: preTargetSetCount } =
           useWorkoutStore.getState();
         completeSet();
-        const { timerEndTime } = useWorkoutStore.getState();
-        if (timerEndTime != null) {
+        const { timerEndTime, notificationsEnabled } =
+          useWorkoutStore.getState();
+        if (timerEndTime != null && notificationsEnabled) {
           void scheduleRestEndNotification(
             timerEndTime,
             preSetCount + 1,

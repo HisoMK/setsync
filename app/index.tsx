@@ -9,6 +9,7 @@ import { RestTimer } from "../components/RestTimer";
 import { SetCounter } from "../components/SetCounter";
 import { StatusLabel } from "../components/StatusLabel";
 import { useWorkoutStore } from "../store/workoutStore";
+import { registerRestEndNotificationChannel } from "../utils/notifications";
 import {
   dismissPersistentNotification,
   registerPersistentNotificationChannel,
@@ -26,6 +27,7 @@ export default function MainScreen() {
   useEffect(() => {
     if (Platform.OS === "android") {
       void registerPersistentNotificationChannel();
+      void registerRestEndNotificationChannel();
     }
   }, []);
 

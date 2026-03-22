@@ -1,6 +1,26 @@
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
+/** Android channel for scheduled “rest ended” alerts (high importance). */
+export const REST_END_NOTIFICATION_CHANNEL_ID = "setsync-rest-end";
+
+/**
+ * Registers the rest-end notification channel on Android.
+ * No-op on web and non-Android platforms.
+ */
+export async function registerRestEndNotificationChannel(): Promise<void> {
+  if (Platform.OS === "web" || Platform.OS !== "android") {
+    return;
+  }
+  await Notifications.setNotificationChannelAsync(
+    REST_END_NOTIFICATION_CHANNEL_ID,
+    {
+      name: "Rest Timer",
+      importance: Notifications.AndroidImportance.HIGH,
+    }
+  );
+}
+
 /**
  * Schedules a local notification when the rest period should end.
  * Uses `timerEndTime` (epoch ms) as a wall-clock DATE trigger so Android can
@@ -18,22 +38,27 @@ export async function scheduleRestEndNotification(
 
   const title =
     setCount < targetSetCount
-      ? `Rest over — Time for set ${setCount} of ${targetSetCount}`
-      : "Rest over — Exercise complete";
+      ? `Rest Over — Set ${setCount} of ${targetSetCount} Complete`
+      : "Rest Over — Exercise Complete";
   const body =
     setCount < targetSetCount
-      ? "Head back to the app to log your next set"
-      : "Head back to the app to log your next exercise";
+      ? "Log your next set"
+      : "Log your next exercise";
+
+  const dateTrigger: Notifications.DateTriggerInput = {
+    type: Notifications.SchedulableTriggerInputTypes.DATE,
+    date: new Date(timerEndTime),
+  };
+  if (Platform.OS === "android") {
+    dateTrigger.channelId = REST_END_NOTIFICATION_CHANNEL_ID;
+  }
 
   return Notifications.scheduleNotificationAsync({
     content: {
       title,
       body,
     },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DATE,
-      date: new Date(timerEndTime),
-    },
+    trigger: dateTrigger,
   });
 }
 

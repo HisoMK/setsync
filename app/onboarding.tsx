@@ -9,7 +9,6 @@ import {
   DEFAULT_TARGET_SETS,
   MAX_REST_SECONDS,
   MIN_REST_SECONDS,
-  REST_STEP_SECONDS,
 } from "../constants/config";
 import { useWorkoutStore } from "../store/workoutStore";
 import { formatTime } from "../utils/formatTime";
@@ -153,8 +152,8 @@ function StepRestDuration({
         <Text style={styles.heading}>How long do you rest{"\n"}between sets?</Text>
         <PickerControl
           displayValue={formatTime(value)}
-          onDecrement={() => onAdjust(-REST_STEP_SECONDS)}
-          onIncrement={() => onAdjust(REST_STEP_SECONDS)}
+          onDecrement={() => onAdjust(-15)}
+          onIncrement={() => onAdjust(15)}
           decrementDisabled={value <= MIN_REST_SECONDS}
           incrementDisabled={value >= MAX_REST_SECONDS}
         />

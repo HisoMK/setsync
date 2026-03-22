@@ -1,13 +1,20 @@
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colours } from "../constants/colours";
-import {
-  MAX_REST_SECONDS,
-  MIN_REST_SECONDS,
-  REST_STEP_SECONDS,
-} from "../constants/config";
+import { MAX_REST_SECONDS, MIN_REST_SECONDS } from "../constants/config";
 import { useWorkoutStore } from "../store/workoutStore";
 import { formatTime } from "../utils/formatTime";
 
@@ -15,14 +22,89 @@ export default function SettingsModal() {
   const insets = useSafeAreaInsets();
 
   const targetSetCount = useWorkoutStore((s) => s.targetSetCount);
-  const restDuration = useWorkoutStore((s) => s.restDuration);
   const soundEnabled = useWorkoutStore((s) => s.soundEnabled);
+  const notificationsEnabled = useWorkoutStore((s) => s.notificationsEnabled);
   const vibrationEnabled = useWorkoutStore((s) => s.vibrationEnabled);
   const setTargetSetCount = useWorkoutStore((s) => s.setTargetSetCount);
   const setRestDuration = useWorkoutStore((s) => s.setRestDuration);
   const setSoundEnabled = useWorkoutStore((s) => s.setSoundEnabled);
+  const setNotificationsEnabled = useWorkoutStore(
+    (s) => s.setNotificationsEnabled
+  );
   const setVibrationEnabled = useWorkoutStore((s) => s.setVibrationEnabled);
   const resetSession = useWorkoutStore((s) => s.resetSession);
+
+  const [restMinutesStr, setRestMinutesStr] = useState(() =>
+    String(Math.floor(useWorkoutStore.getState().restDuration / 60))
+  );
+  const [restSecondsStr, setRestSecondsStr] = useState(() =>
+    String(useWorkoutStore.getState().restDuration % 60)
+  );
+  const [restDurationError, setRestDurationError] = useState<string | null>(
+    null
+  );
+  const [restConfirmLabel, setRestConfirmLabel] = useState("Confirm");
+  const restSavedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+
+  useEffect(() => {
+    return () => {
+      if (restSavedTimeoutRef.current != null) {
+        clearTimeout(restSavedTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      const total = useWorkoutStore.getState().restDuration;
+      setRestMinutesStr(String(Math.floor(total / 60)));
+      setRestSecondsStr(String(total % 60));
+      setRestDurationError(null);
+    }, [])
+  );
+
+  const handleConfirmRestDuration = () => {
+    const mRaw = restMinutesStr.trim();
+    const sRaw = restSecondsStr.trim();
+
+    const parsePart = (raw: string): number | null => {
+      if (raw === "") return 0;
+      if (!/^\d+$/.test(raw)) return null;
+      return Number.parseInt(raw, 10);
+    };
+
+    const m = parsePart(mRaw);
+    const s = parsePart(sRaw);
+    if (m === null || s === null) {
+      setRestDurationError("Use whole numbers only.");
+      return;
+    }
+    const totalSeconds = m * 60 + s;
+    if (totalSeconds < MIN_REST_SECONDS || totalSeconds > MAX_REST_SECONDS) {
+      setRestDurationError(
+        `Rest must be between ${formatTime(MIN_REST_SECONDS)} and ${formatTime(MAX_REST_SECONDS)}.`
+      );
+      return;
+    }
+    setRestDuration(totalSeconds);
+    setRestDurationError(null);
+    if (restSavedTimeoutRef.current != null) {
+      clearTimeout(restSavedTimeoutRef.current);
+    }
+    setRestConfirmLabel("Saved");
+    restSavedTimeoutRef.current = setTimeout(() => {
+      restSavedTimeoutRef.current = null;
+      setRestConfirmLabel("Confirm");
+    }, 1500);
+  };
+
+  const handleClearRestFields = () => {
+    setRestMinutesStr("");
+    setRestSecondsStr("");
+    setRestDurationError(null);
+  };
 
   const handleResetSession = () => {
     Alert.alert(
@@ -103,54 +185,86 @@ export default function SettingsModal() {
           <View style={styles.divider} />
 
           {/* Rest Duration */}
-          <View style={styles.row}>
+          <View style={styles.restBlock}>
             <View style={styles.rowMeta}>
               <Text style={styles.rowTitle}>Rest Duration</Text>
               <Text style={styles.rowSub}>Between sets</Text>
             </View>
-            <View style={styles.stepper}>
+            <View style={styles.restInputsRow}>
+              <View style={styles.restFieldCol}>
+                <TextInput
+                  value={restMinutesStr}
+                  onChangeText={setRestMinutesStr}
+                  keyboardType="number-pad"
+                  maxLength={1}
+                  selectTextOnFocus
+                  style={styles.restInput}
+                  placeholder="0"
+                  placeholderTextColor={colours.muted}
+                  accessibilityLabel="Rest duration minutes"
+                />
+                <Text style={styles.restFieldLabel}>min</Text>
+              </View>
+              <View style={styles.restFieldCol}>
+                <TextInput
+                  value={restSecondsStr}
+                  onChangeText={setRestSecondsStr}
+                  keyboardType="number-pad"
+                  maxLength={2}
+                  selectTextOnFocus
+                  style={styles.restInput}
+                  placeholder="0"
+                  placeholderTextColor={colours.muted}
+                  accessibilityLabel="Rest duration seconds"
+                />
+                <Text style={styles.restFieldLabel}>sec</Text>
+              </View>
+            </View>
+            <View style={styles.restActionsRow}>
               <Pressable
-                onPress={() =>
-                  setRestDuration(
-                    Math.max(
-                      MIN_REST_SECONDS,
-                      restDuration - REST_STEP_SECONDS
-                    )
-                  )
-                }
-                disabled={restDuration <= MIN_REST_SECONDS}
-                style={[
-                  styles.stepBtn,
-                  restDuration <= MIN_REST_SECONDS && styles.stepBtnDisabled,
-                ]}
-                accessibilityLabel="Decrease rest duration"
+                onPress={handleClearRestFields}
+                style={styles.restClearBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Clear rest duration fields"
               >
-                <Text style={styles.stepBtnText}>−</Text>
+                <Text style={styles.restClearBtnText}>Clear</Text>
               </Pressable>
-              <Text style={[styles.stepValue, styles.stepValueWide]}>
-                {formatTime(restDuration)}
-              </Text>
               <Pressable
-                onPress={() =>
-                  setRestDuration(
-                    Math.min(
-                      MAX_REST_SECONDS,
-                      restDuration + REST_STEP_SECONDS
-                    )
-                  )
-                }
-                disabled={restDuration >= MAX_REST_SECONDS}
-                style={[
-                  styles.stepBtn,
-                  restDuration >= MAX_REST_SECONDS && styles.stepBtnDisabled,
-                ]}
-                accessibilityLabel="Increase rest duration"
+                onPress={handleConfirmRestDuration}
+                style={styles.restConfirmBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Confirm rest duration"
               >
-                <Text style={[styles.stepBtnText, styles.stepBtnAccent]}>
-                  +
+                <Text style={styles.restConfirmBtnText}>
+                  {restConfirmLabel}
                 </Text>
               </Pressable>
             </View>
+            {restDurationError != null ? (
+              <Text style={styles.restErrorText}>{restDurationError}</Text>
+            ) : null}
+          </View>
+
+          <View style={styles.divider} />
+
+          {/* Notifications */}
+          <View style={styles.row}>
+            <View style={styles.rowMeta}>
+              <Text style={styles.rowTitle}>Notifications</Text>
+              <Text style={styles.rowSub}>Rest end alert</Text>
+            </View>
+            <Switch
+              value={notificationsEnabled}
+              onValueChange={setNotificationsEnabled}
+              trackColor={{
+                false: colours["surface-2"],
+                true: colours["accent-dim"],
+              }}
+              thumbColor={
+                notificationsEnabled ? colours.accent : colours.muted
+              }
+              ios_backgroundColor={colours["surface-2"]}
+            />
           </View>
 
           <View style={styles.divider} />
@@ -281,6 +395,77 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: colours["surface-2"],
+  },
+  restBlock: {
+    paddingVertical: 20,
+    gap: 12,
+  },
+  restInputsRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  restFieldCol: {
+    flex: 1,
+    gap: 6,
+  },
+  restInput: {
+    backgroundColor: colours["surface-2"],
+    color: colours.primary,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    fontSize: 18,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+  restFieldLabel: {
+    fontSize: 12,
+    color: colours.muted,
+    textAlign: "center",
+  },
+  restActionsRow: {
+    flexDirection: "row",
+    gap: 12,
+    alignItems: "stretch",
+  },
+  restConfirmBtn: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 16,
+    backgroundColor: colours.accent,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  restConfirmBtnPressed: {
+    opacity: 0.85,
+  },
+  restConfirmBtnText: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: colours.background,
+    letterSpacing: 0.3,
+  },
+  restClearBtn: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 16,
+    backgroundColor: colours["surface-2"],
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  restClearBtnPressed: {
+    opacity: 0.85,
+  },
+  restClearBtnText: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: colours.primary,
+    letterSpacing: 0.3,
+  },
+  restErrorText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: colours.destructive,
   },
   stepper: {
     flexDirection: "row",

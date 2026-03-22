@@ -9,6 +9,7 @@ const STORAGE_KEYS = {
   targetSetCount: "@setsync/targetSetCount",
   hasCompletedOnboarding: "@setsync/hasCompletedOnboarding",
   soundEnabled: "@setsync/soundEnabled",
+  notificationsEnabled: "@setsync/notificationsEnabled",
   vibrationEnabled: "@setsync/vibrationEnabled",
   setCount: "@setsync/setCount",
 } as const;
@@ -22,6 +23,7 @@ interface WorkoutState {
   targetSetCount: number;
   hasCompletedOnboarding: boolean;
   soundEnabled: boolean;
+  notificationsEnabled: boolean;
   vibrationEnabled: boolean;
   isPaused: boolean;
   completeSetTrigger: number;
@@ -43,6 +45,7 @@ interface WorkoutActions {
   stopRest: () => void;
   startNewExercise: () => void;
   setSoundEnabled: (enabled: boolean) => void;
+  setNotificationsEnabled: (enabled: boolean) => void;
   setVibrationEnabled: (enabled: boolean) => void;
   setScheduledNotificationId: (id: string | null) => void;
 }
@@ -66,6 +69,7 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
   targetSetCount: 4,
   hasCompletedOnboarding: false,
   soundEnabled: true,
+  notificationsEnabled: true,
   vibrationEnabled: true,
   isPaused: false,
   completeSetTrigger: 0,
@@ -168,6 +172,11 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
     set({ soundEnabled: enabled });
   },
 
+  setNotificationsEnabled: (enabled) => {
+    persist(STORAGE_KEYS.notificationsEnabled, String(enabled));
+    set({ notificationsEnabled: enabled });
+  },
+
   setVibrationEnabled: (enabled) => {
     persist(STORAGE_KEYS.vibrationEnabled, String(enabled));
     set({ vibrationEnabled: enabled });
@@ -187,6 +196,7 @@ export async function hydrateStore(): Promise<void> {
       targetSetCount,
       hasCompletedOnboarding,
       soundEnabled,
+      notificationsEnabled,
       vibrationEnabled,
       setCount,
     ] = await AsyncStorage.multiGet([
@@ -194,6 +204,7 @@ export async function hydrateStore(): Promise<void> {
       STORAGE_KEYS.targetSetCount,
       STORAGE_KEYS.hasCompletedOnboarding,
       STORAGE_KEYS.soundEnabled,
+      STORAGE_KEYS.notificationsEnabled,
       STORAGE_KEYS.vibrationEnabled,
       STORAGE_KEYS.setCount,
     ]);
@@ -217,6 +228,10 @@ export async function hydrateStore(): Promise<void> {
 
     if (soundEnabled[1] === "false") {
       updates.soundEnabled = false;
+    }
+
+    if (notificationsEnabled[1] === "false") {
+      updates.notificationsEnabled = false;
     }
 
     if (vibrationEnabled[1] === "false") {
